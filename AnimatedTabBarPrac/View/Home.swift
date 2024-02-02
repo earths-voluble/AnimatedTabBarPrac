@@ -14,7 +14,8 @@ struct Home: View {
     @State private var allTabs: [AnimatedTab] = Tab.allCases.compactMap { tab -> AnimatedTab? in
         return .init(tab: tab)
     }
-    
+    // Bounce Property
+    @State private var bouncesDown: Bool = true
     var body: some View {
         VStack(spacing: 0)
         {
@@ -60,6 +61,18 @@ struct Home: View {
                 .setUpTab(.profile)
 
             }
+            
+            // 테스트
+            Picker("", selection: $bouncesDown) {
+                Text("Bounces Down")
+                    .tag(true)
+                
+                Text("Bounces Up")
+                    .tag(false)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 15)
+            .padding(.bottom, 20)
            CustomTabBar()
             
             
@@ -72,10 +85,10 @@ struct Home: View {
         HStack(spacing: 0) {
             ForEach($allTabs) { $animatedTab in
                 let tab = animatedTab.tab
-                
                 VStack(spacing: 4) {
                     Image(systemName: tab.rawValue)
                         .font(.title2)
+                        .symbolEffect(bouncesDown ? .bounce.down.byLayer : .bounce.up.byLayer, value: animatedTab.isAnimating)
                     Text(tab.title)
                         .font(.caption2)
                         .textScale(.secondary)
@@ -89,7 +102,17 @@ struct Home: View {
                 
                 // 원한다면 버튼을 사용할 수도 있다
                 .onTapGesture {
-                    activeTab = tab
+                    withAnimation(.smooth, completionCriteria: .logicallyComplete, {
+                        activeTab = tab
+                        animatedTab.isAnimating = true
+                    }, completion: {
+                        var transaction = Transaction()
+                        transaction.disablesAnimations = true
+                        withTransaction(transaction) {
+                            animatedTab.isAnimating = nil
+                        }
+                    })
+                    
                 }
             }
         }
